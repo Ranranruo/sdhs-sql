@@ -38,7 +38,7 @@ INSERT INTO employee VALUES (1003, '김영희', '부장', 4000000, 1006, 2);
 INSERT INTO employee VALUES (1004, '황진희', '대리', 3000000, 1002, 2);
 INSERT INTO employee VALUES (1005, '정진우', '사원', 2500000, 1004, 1);
 INSERT INTO employee VALUES (1006, '박현석', '이사', 5500000, NULL, 1);
-INSERT INTO employee VALUES (1007, '김정현', '사원', 2500000, 1001, 1);
+INSERT INTO employee VALUES (1007, '김정현', '사원', 2500000, 1001, NULL);
 
 SELECT * FROM employee;
 
