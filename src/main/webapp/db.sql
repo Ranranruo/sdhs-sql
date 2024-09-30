@@ -381,6 +381,28 @@ SELECT e.empname, d.deptname
 FROM employee e
 JOIN department d ON e.dno = d.deptno
 
+-- 16 모든 직원의 사원이름과 부하직원의 이름을 검색하세요.
+SELECT e1.empname, e2.empname
+FROM employee e1
+JOIN employee e2 ON e1.empno = e2.supervisor
+
+-- 17 기획부서나 영업부서에 속한 사원의 이름을 검색하세요.
+SELECT e.empname
+FROM employee e
+JOIN department d ON e.dno = d.deptno
+WHERE d.deptname IN ('기획', '영업')
+
+-- 18 기획부서나 영업부서에 속하지 않은 사원의 이름을 검색하세요.
+SELECT e.empname
+FROM employee e
+JOIN department d ON e.dno = d.deptno
+WHERE d.deptname NOT IN ('기획', '영업')
+
+-- 19 소속 직원이 하나도 없는 부서명을 검색하세요.
+SELECT d.deptname
+FROM department d JOIN employee e ON d.deptno = e.dno
+WHERE e.dno IS NULL
+	
 -- 질의하기(10)
 
 -- 황진희와 같은 부서에 근무하는 사원들의 이름과 부서 이름 조회하기
