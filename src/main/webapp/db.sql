@@ -291,23 +291,173 @@ where dno = deptno
 and deptname <> '영업'
 
 
--- 1
-SELECT distinct title FROM employee
+-- 1 모든 사원의 직급을 중복없이 검색하세요
+SELECT distinct title
+FROM employee
 
--- 2
-SELECT * FROM employee WHERE salary IN((SELECT MAX(salary) FROM employee), (SELECT MIN(salary) FROM employee)) ORDER BY salary DESC
+-- 2 가장 급여를 많이 받는 사원과 가장 급여를 적게 받는 사원 검색
+SELECT *
+FROM employee
+WHERE salary IN((SELECT MAX(salary) FROM employee), (SELECT MIN(salary) FROM employee))
+ORDER BY salary DESC
 
--- 3 
-SELECT * FROM employee WHERE dno IN (SELECT dno FROM employee WHERE salary IN(SELECT MAX(salary) FROM employee))
+-- 3 가장 급여를 많이 받는 사람이 소속된 부서에 속한 모든 사원을 검색하세요.
+SELECT *
+FROM employee
+WHERE dno
+IN (SELECT dno FROM employee WHERE salary IN(SELECT MAX(salary) FROM employee))
 
--- 4
-SELECT d.deptname, COUNT(e.dno) FROM department d JOIN employee e ON d.deptno = e.dno GROUP BY d.deptname
+-- 4 모든 부서에 속한 사원의 수를 부서명과 사원수로 검색하세요.
+SELECT d.deptname, COUNT(e.dno)
+FROM department d 
+JOIN employee e ON d.deptno = e.dno
+GROUP BY d.deptname
 
--- 5
-SELECT COUNT(*) FROM department d JOIN employee e ON e.dno = d.deptno GROUP BY d.floor HAVING d.floor = 8
+SELECT deptname, count(empno)
+FROM department LEFT OUTER JOIN employee
+ON deptno = dno
+GROUP BY deptname
 
--- 6
-SELECT e1 FROM employee e1, employee e2 WHERE e1.dno 
+-- 5 8층에 있는 사원수를 검색하세요.
+SELECT COUNT(*)
+FROM department d
+JOIN employee e
+ON e.dno = d.deptno
+GROUP BY d.floor
+HAVING d.floor = 8
 
-SELECT * FROM employee
-SELECT * FROM department
+-- 6 상사와 다른 부서에 속한 모든 사원의 정보를 검색하세요.
+SELECT e.*
+FROM employee e, employee s
+WHERE e.supervisor = s.empno
+AND s.dno <> e.dno
+
+-- 7 상사와 같은 부서에 속한 모든 사원의 정보를 검색하세요.
+SELECT e.*
+FROM employee e, employee s
+WHERE e.supervisor = s.empno
+AND s.dno = e.dno
+
+-- 8 상사가 없는 모든 사원의 정보를 검색하세요.
+SELECT *
+FROM employee
+WHERE supervisor IS NULL
+
+-- 9 월급이 15%인상한 경우 회사가 더 지급해야 하는 금액을 검색하세요.
+SELECT SUM(salary * 1.15) - SUM(salary)
+FROM employee 
+
+-- 10 8층에 있는 대리의 이름, 부서명, 급여를 검색하세요.
+SELECT e.empname, d.deptname, e.salary
+FROM employee e
+JOIN department d ON e.dno = d.deptno
+WHERE e.title = '대리' AND d.floor = 8
+
+-- 11 모든 사원의 직급별 평균 급여를 검색하세요.
+SELECT e.title, AVG(e.salary)
+FROM employee e
+GROUP BY e.title
+
+-- 12 기획부가 아닌 부서의 평균 급여를 검색하세요.
+SELECT AVG(e.salary)
+FROM employee e
+JOIN department d ON e.dno = d.deptno
+WHERE d.deptname <> '기획'
+
+-- 13 직급별 급여 총액이 가장 큰 직급의 직급명, 평균급여, 사원수를 검색하세요
+SELECT title, AVG(salary), COUNT(*)
+FROM employee
+HAVING SUM(salary) = (SELECT MAX(SUM(salary)) FROM employee GROUP BY title)
+GROUP BY title
+
+-- 14 모든 사원의 사원이름과 상사의 이름을 검색하세요.
+SELECT e1.empname, e2.empname
+FROM employee e1
+JOIN employee e2 ON e1.supervisor = e2.empno
+
+
+-- 15 모든 직원의 사원이름과 부서 이름을 검색하세요.
+SELECT e.empname, d.deptname
+FROM employee e
+JOIN department d ON e.dno = d.deptno
+
+-- 질의하기(10)
+
+-- 황진희와 같은 부서에 근무하는 사원들의 이름과 부서 이름 조회하기
+SELECT empname, deptname
+FROM employee, department
+WHERE dno = deptno
+AND dno IN (SELECT dno FROM employee WHERE empname = '황진희')
+
+-- 부서별 평균급여가 황진희보다 높은 부서에 대하여 부서번호와 평균급여를 조회하기
+SELECT dno, AVG(salary)
+FROM employee
+HAVING AVG(salary) > (SELECT salary FROM employee WHERE empname = '황진희')
+GROUP BY dno
+
+-- 각 부서별 급여를 가장 많이 받는 직원 조회하기
+SELECT *
+FROM employee e1
+WHERE salary = (SELECT MAX(salary) FROM employee e2 WHERE e1.dno = e2.dno GROUP BY dno)
+ORDER BY dno
+
+-- 부서의 모든 직원이 황진희 보다 월급을 많이 받는 부서의 직원 조회하기
+SELECT *
+FROM employee e1
+WHERE (SELECT salary FROM employee WHERE empname = '황진희') < ALL (SELECT salary FROM employee e2 WHERE e1.dno = e2.dno)
+AND dno IS NOT NULL
+
+SELECT * FROM employee WHERE dno = (
+	SELECT dno 
+	FROM employee e
+	WHERE salary > (
+		SELECT salary
+		FROM employee
+		WHERE empname = '황진희'
+		)
+	GROUP BY dno
+	HAVING COUNT(*) = (
+		SELECT COUNT(*)
+		FROM employee
+		GROUP BY dno
+		HAVING dno = e.dno
+	)
+)
+-- 급여가 300만원을 초과하는 직원이 속한 부서와 같은 부서에 근무하는 직원 조회하기(in)
+SELECT *
+FROM employee
+WHERE dno in (
+	SELECT dno
+	FROM employee
+	WHERE salary > 3000000
+	)
+
+-- 개발부서의 최대급여보다 많은 급여를 받는 직원 조회하기
+SELECT *
+FROM employee
+WHERE salary > (
+	SELECT MAX(salary)
+	FROM employee, department
+	WHERE dno = deptno
+	AND deptname = '개발'
+	)
+	
+-- 개발부서의 급여보다 많은 급여를 받는 직원 조회하기(all)
+SELECT *
+FROM employee
+WHERE salary > ALL (
+	SELECT salary
+	FROM employee, department
+	WHERE dno = deptno
+	AND deptname = '개발'
+	)
+	
+-- 개발부서의 최소급여보다 적은 급여를 받는 직원 조회하기
+SELECT *
+FROM employee
+WHERE salary < ALL (
+	SELECT salary
+	FROM employee, department
+	WHERE dno = deptno
+	AND deptname = '개발'
+	)
