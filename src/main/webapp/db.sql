@@ -3,7 +3,7 @@ CREATE TABLE department(
 	Deptname VARCHAR2(10),
 	Floor NUMBER(2)
 )
-DROP TABLE department;
+DROP TABLE employee;
 
 INSERT INTO department VALUES (1, '기획', 8);
 INSERT INTO department VALUES (2, '개발', 10);
@@ -11,6 +11,7 @@ INSERT INTO department VALUES (3, '영업', 9);
 INSERT INTO department VALUES (4, '총무', 9);
 
 SELECT * FROM DEPARTMENT;
+SELECT * FROM employee;
 
 CREATE TABLE human(
 	gender VARCHAR()
@@ -295,9 +296,10 @@ and deptname <> '영업'
 SELECT distinct title
 FROM employee
 
+
 -- 2 가장 급여를 많이 받는 사원과 가장 급여를 적게 받는 사원 검색
 SELECT *
-FROM employee
+FROM employee 
 WHERE salary IN((SELECT MAX(salary) FROM employee), (SELECT MIN(salary) FROM employee))
 ORDER BY salary DESC
 
@@ -309,7 +311,7 @@ IN (SELECT dno FROM employee WHERE salary IN(SELECT MAX(salary) FROM employee))
 
 -- 4 모든 부서에 속한 사원의 수를 부서명과 사원수로 검색하세요.
 SELECT d.deptname, COUNT(e.dno)
-FROM department d 
+FROM department d
 JOIN employee e ON d.deptno = e.dno
 GROUP BY d.deptname
 
@@ -364,6 +366,13 @@ FROM employee e
 JOIN department d ON e.dno = d.deptno
 WHERE d.deptname <> '기획'
 
+-- 10층에 근무하는 사원의 급여총합을 구하시오
+select *
+from employee join department
+where e.floor = 8
+ 
+SELECT *
+FROM employee JOIN department ON 
 -- 13 직급별 급여 총액이 가장 큰 직급의 직급명, 평균급여, 사원수를 검색하세요
 SELECT title, AVG(salary), COUNT(*)
 FROM employee
@@ -472,12 +481,179 @@ WHERE dno IN (
 	OR deptname = '영업'
 	)
 	
+SELECT empname, dno
+FROM employee, department
+WHERE dno = deptno
+AND deptname IN ('기획', '영업')
+
+-- 연산자의 우선순위로 인해서 AND 연산이 먼저 수행되고 그 다음에 OR연산자가 수행되서
+-- 괄호를 쓰지 않으면 원하는 결과가 나오지 않는다.
+SELECT empname, dno
+FROM employee INNER JOIN department
+ON dno = deptno
+AND ( deptname = '기획'
+OR deptname = '양압')
 -- 기획부나 영업부에 근무하지 않는 직원들의 이름과 부서 조회하기
+SELECT empname, dno
+FROM employee department
+ON dno = deptno
+WHERE deptname NOT IN ('기획', '영업')
 
 -- 황진희와 같은 직급의 직원들이 근무하는 부서 이름 조회하기
+SELECT deptname FROM department LEFT OUTER JOIN employee
+ON deptno = dno
+WHERE title = (SELECT title FROM employee WHERE empname = '황진희') AND empname != '황진희'
 
--- 자신이 속한 부서의 평균 급여보다 많은 급여를 받는 직원들의 이름, 부서번호, 급여 조회하기
+-- 자신이 속한 부서의 평균 급여보다 많은 급여를 받는 직원들의 이름, 부서번호, 급여 조회하기(신민석)
+SELECT empname, dno, salary
+FROM department 
+INNER JOIN employee
+ON deptno = dno
+WHERE SALARY > (SELECT AVG(salary) FROM employee WHERE deptno = dno)
 
--- 직원이 2명 이상인 부서의 부서이름 조회하기
+SELECT empname, e.dno, salary
+FROM employee e, (SELECT dno, AVG(salary) avg_salary FROM employee GROUP BY dno) avg
+WHERE e.dno = avg.dno
+AND salary > avg_salary
 
--- `부서별 직원들의 최대 급여를 부서명, 부서별 직원 최대 급여 순으로 조회하기
+-- 문제랑 상관없는 SQL
+SELECT empname dno
+FROM employee LEFT OUT JOIN department
+ON dno = deptno
+WHERE deptname NOT IN ('기획', '영업')
+OR dno IS null;
+
+-- 직원이 2명 이상인 부서의 부서이름 조회하기(의준홍)
+SELECT deptname
+FROM department, employee
+WHERE deptno = dno
+HAVING count(*) >=
+GROUP BY deptname
+
+-- 부서별 직원들의 최대 급여를 부서명, 부서별 직원 최대 급여 순으로 조회하기(윤지상)
+SELECT deptname, MAX(salary)
+FROM employee, department
+WHERE dno = deptno
+GROUP BY deptname
+
+-- 기획부서에 근무하는 직원들의 모든 정보 조회하기(이석훈)
+SELECT *
+FROM employee e JOIN department d
+ON e.dno = d.deptno
+WHERE deptname = '기획'
+
+SELECT *
+FROM employee
+WHERE EXISTS (SELECT * FROM department WHERE deptname = '기획' AND deptno = dno)
+
+-- 기획부서에 근무하지 않는 직원들의 모든 정보 조회하기(이은상)
+-- 이때는 부서가 null인 아이는 가져오지 않는다.
+SELECT *
+FROM employee, department
+WHERE deptno = dno
+AND deptname != '기획'
+
+-- 기획부서에 근무하지 않는 직원들의 모든 정보 조회하기 EXISTS 사용해서
+-- 이떄는 부서가 null인 아이도 가져온다.
+SELECT *
+FROM employee
+WHERE NOT EXISTS (SELECT * FROM department WHERE deptname = '기획' AND deptno = dno)
+
+-- 직급이 대리이면 대머리로 바꾸고 나머지 직읍은 그대로 조회하기
+SELECT DECODE(title, '대리', '대머리', title)
+FROM employee
+
+-- 부서별 월급의 평균을 소수 2자리까지 나오게하고 세자리마다 쉼표 표시하기
+-- fm: 포맷(결과값의 공백 삭제)
+-- s: 사인(결과값 앞에 +기호 추가)
+-- .: 소숫점
+-- ,: 쉼표 추가
+
+SELECT dno, TO_CHAR(AVG(salary), 's9,999,999.99')
+FROM employee
+GROUP BY dno
+
+-- case 키워드
+-- 기획부 월급평균, 영업부 월급평균 구하기
+SELECT (AVG(salary)
+FROM employee, department
+WHERE dno = deptno
+AND deptname = '기획'),
+(AVG(salary)
+FROM employee, department
+WHERE dno = deptno
+AND deptname = '영업')
+FROM dual
+
+SELECT AVG(CASE dno WHEN 1 THEN salary ELSE NULL END), AVG(CASE dno WHEN 2 THEN salary ELSE NULL END)
+FROM employee
+
+SELECT AVG(CASE deptname WHEN '기획' THEN salary ELSE NULL END) 기획부평균급여,
+AVG(CASE deptname WHEN '기획' THEN salary ELSE NULL END) 영업부평균급여
+FROM employee, department
+WHERE dno = deptno
+
+-- 월급이 300만원 이상인 사람들의 수와 미만인 사람들의 수 구하기
+SELECT COUNT(CASE WHEN salary >= 3000000 THEN salary ELSE NULL END),AVG(CASE deptname WHEN '기획' THEN salary ELSE NULL END) 기획부평균급여,
+COUNT(CASE WHEN salary < 3000000 THEN salary ELSE NULL END),AVG(CASE deptname WHEN '기획' THEN salary ELSE NULL END) 기획부평균급여
+FROM employee
+
+-- 직급이 대리이면 대머리로 바꾸고 나머지 직급은 그대로 조회하기(case)
+SELECT CASE title WHEN '대리' THEN '대머리' ELSE title END
+FROM employee
+
+-- 1번부서는 기획, 2번부서는 영엽으로 조회하기
+SELECT CASE dno WHEN 1 THEN '기획' WHEN 2 THEN '영업' END
+FROM employee    
+
+-- 400만원 이상이면 고임금자, 300만원 미만은 저임금자, 그 사이는 중위임금자(이정우)
+SELECT CASE WHEN salary >= 4000000 THEN '고임금자'
+WHEN salary < 3000000 then '저임금자'
+ELSE '중위임금자' END
+FROM employee
+
+-- 이사 부장은 노쟁불가, 나머지는 노쟁가능(진효빈)
+SELECT title, CASE title WHEN '부장' THEN '임원'
+WHEN '이사' THEN '임원'
+ELSE '노조원' END
+FROM employee
+
+SELECT title, CASE WHEN title IN('부장', 이사) THEN '임원'
+ELSE '노조원' END
+
+-- rank
+-- 월급의 역순으로 순위 구하
+SELECT empname, salary, rank() OVER (ORDER BY salary DESC)
+FROM employee
+
+-- 월급의 역순으로 순위를 중복순위를 없어지지 않도록 하기
+SELECT empname, salary, dense_rank() OVER (ORDER BY salary DESC)
+FROM employee
+
+-- 월급의 역순으로 순위 구하기, 동일 순위의 경우 두번째 조건(부서번호의 오름차순) 으로 순위 구하기
+-- Oracle에서는 NULL이 숫자보다 크다.
+SELECT empname, dno, salary, RANK() OVER (ORDER BY salary DESC, dno ASC)
+FROM employee
+
+-- 선생님 SQL 문제
+
+CREATE TABLE member_tbl(
+	id VARCHAR2(5) NOT NULL PRIMARY KEY,
+	name VARCHAR2(20),
+	gender VARCHAR2(3)
+)
+
+INSERT INTO member_tbl(id, name, gender) VALUES ('10301', '권기현', '남');
+INSERT INTO member_tbl(id, name, gender) VALUES ('10302', '구지우', '여');
+INSERT INTO member_tbl(id, name, gender) VALUES ('10303', '권태준', '남');
+INSERT INTO member_tbl(id, name, gender) VALUES ('10304', '금기연', '여');
+INSERT INTO member_tbl(id, name, gender) VALUES ('10305', '김영진', '남');
+INSERT INTO member_tbl(id, name, gender) VALUES ('10401', '김주현', '남');
+INSERT INTO member_tbl(id, name, gender) VALUES ('10402', '김태민', '여');
+INSERT INTO member_tbl(id, name, gender) VALUES ('10403', '임수민', '여');
+INSERT INTO member_tbl(id, name, gender) VALUES ('10404', '남상도', '남');
+INSERT INTO member_tbl(id, name, gender) VALUES ('10405', '조은호', '여');
+
+
+
+
