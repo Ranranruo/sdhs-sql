@@ -39,7 +39,7 @@ INSERT INTO employee VALUES (1003, '김영희', '부장', 4000000, 1006, 2);
 INSERT INTO employee VALUES (1004, '황진희', '대리', 3000000, 1002, 2);
 INSERT INTO employee VALUES (1005, '정진우', '사원', 2500000, 1004, 1);
 INSERT INTO employee VALUES (1006, '박현석', '이사', 5500000, NULL, 1);
-INSERT INTO employee VALUES (1007, '김정현', '사원', 2500000, 1001, 1);
+INSERT INTO employee VALUES (1007, '김정현', '사원', 2500000, 1001, NULL);
 
 SELECT * FROM employee;
 
@@ -390,6 +390,28 @@ SELECT e.empname, d.deptname
 FROM employee e
 JOIN department d ON e.dno = d.deptno
 
+-- 16 모든 직원의 사원이름과 부하직원의 이름을 검색하세요.
+SELECT e1.empname, e2.empname
+FROM employee e1
+JOIN employee e2 ON e1.empno = e2.supervisor
+
+-- 17 기획부서나 영업부서에 속한 사원의 이름을 검색하세요.
+SELECT e.empname
+FROM employee e
+JOIN department d ON e.dno = d.deptno
+WHERE d.deptname IN ('기획', '영업')
+
+-- 18 기획부서나 영업부서에 속하지 않은 사원의 이름을 검색하세요.
+SELECT e.empname
+FROM employee e
+JOIN department d ON e.dno = d.deptno
+WHERE d.deptname NOT IN ('기획', '영업')
+
+-- 19 소속 직원이 하나도 없는 부서명을 검색하세요.
+SELECT d.deptname
+FROM department d JOIN employee e ON d.deptno = e.dno
+WHERE e.dno IS NULL
+	
 -- 질의하기(10)
 
 -- 황진희와 같은 부서에 근무하는 사원들의 이름과 부서 이름 조회하기
@@ -657,3 +679,7 @@ INSERT INTO member_tbl(id, name, gender) VALUES ('10405', '조은호', '여');
 
 
 
+<<<<<<< HEAD
+=======
+-- `부서별 직원들의 최대 급여를 부서명, 부서별 직원 최대 급여 순으로 조회하기
+>>>>>>> cddd14ef518385cdbd25af51c8fafdfee17bc1f8
