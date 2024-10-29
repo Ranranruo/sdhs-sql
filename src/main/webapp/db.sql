@@ -657,6 +657,168 @@ FROM employee
 SELECT empname, dno, salary, RANK() OVER (ORDER BY salary DESC, dno ASC)
 FROM employee
 
+-- rollup
+SELECT dno, SUM(salary)
+FROM employee
+GROUP BY ROLLUP(dno)
+
+SELECT dno, SUM(salary)
+FROM employee
+GROUP BY ROLLUP(dno, title)
+
+SELECT dno, title, SUM(salary)
+FROM employee
+GROUP BY ROLLUP(dno), title
+
+-- cube
+SELECT dno, SUM(salary)
+FROM employee
+GROUP BY CUBE(dno)
+
+SELECT dno, title, SUM(salary)
+FROM employee
+GROUP BY CUBE(dno, title)
+
+-- grouping sets
+SELECT dno, SUM(salary)
+FROM employee
+GROUP BY GROUPING SETS(dno)
+
+SELECT dno, title, SUM(salary)
+FROM employee
+GROUP BY GROUPING SETS((dno), (dno, title), ())
+
+-- employee와 department와 동일한 구조를 갖고 있는 테이블 만들기
+CREATE TABLE emp
+AS
+SELECT * FROM employee;
+
+SELECT * FROM emp;
+
+-- delete emp와 같음
+truncate table emp;
+truncate table dept;
+
+CREATE TABLE dept
+AS
+SELECT * FROM department;
+WHERE deptno = '999';
+
+SELECT * FROM dept;
+
+-- insert
+-- 기본 구조
+--INSERT INTO emp (속성들)
+--VALUES (값들)
+
+-- 한꺼번에 여러개의 테이블에 여러개의 행을 삽입하는 경우
+--INSERT ALL
+--INTO 테이블명 (속성들) VALUES (값들)
+--INTO 테이블명 (속성들) VALUES (값들)
+--INTO 테이블명 (속성들) VALUES (값들)
+--SELECT * FROM dual;
+
+-- insert all select from 구조에서는 구조만 가져오고 키는 안가져옴
+-- alter 명령어로 기본키 추가하기
+
+ALTER TABLE emp
+ADD PRIMARY KEY(empno);
+
+ALTER TABLE dept
+ADD PRIMARY KEY(deptno);
+
+-- 외래키 추가하기
+ALTER TABLE emp
+ADD FOREIGN KEY(dno) REFERENCES dept(deptno) ON DELETE CASCADE;
+
+delete emp;
+delete dept;
+
+INSERT ALL
+INTO dept VALUES (2, '개발', 10)
+INTO dept VALUES (1, '기획', 9)
+INTO dept VALUES (3, '영업', 8)
+into emp VALUES (1001, '박철수', '대리', 3000000, 1002, 1)
+SELECT * FROM dual;
+
+INSERT ALL
+INTO emp (empno, empname, salary)
+SELECT empno, empname, salary
+FROM employee
+WHERE empno > 1001 AND empno < 1004
+
+DROP TABLE emp;
+DROP TABLE dept;
+
+CREATE TABLE emp
+AS SELECT * FROM employee;
+
+CREATE TABLE dept
+AS SELECT * FROM department;
+
+-- 기본키 추가하기
+
+ALTER TABLE emp
+ADD PRIMARY KEY(empno);
+
+ALTER TABLE dept
+ADD PRIMARY KEY(deptno);
+
+-- dept테이블의 데이터가 삭제되면 자동으로 emp도 삭제된다.
+ALTER TABLE emp
+ADD FOREIGN KEY(dno) REFERENCES dept(deptno)
+ON UPDATE CASCADE;
+
+ALTER TABLE emp
+ADD FOREIGN KEY(dno) REFERENCES dept(deptno) ON DELETE CASCADE;
+
+SELECT * FROM emp;
+SELECT * FROM dept;
+
+-- 3번 부서 사람을 지우기
+DELETE emp
+WHERE dno = 3;
+
+DELETE dept
+WHERE deptno = 2;
+
+SELECT * FROM user_constraints
+WHERE table_name = 'EMP'
+
+ALTER TABLE emp
+DROP constraint SYS_C007126
+
+-- update
+--UPDATE 테이블이름
+--SET 속성=값, [속성=값]
+--[WHERE 조건]
+
+-- emp 테이블의 1번 부서를 5번 부서로 수정하기
+UPDATE emp
+SET dno = 5
+WHERE dno = 1;
+
+-- 김정현의 부서를 3번 부서로 수정하기
+UPDATE emp
+SET dno = 3
+WHERE empname = '김정현'
+
+-- 월급을 10% 인상하기
+UPDATE emp
+SET salary = salary * 1.1
+
+-- 이름에 '정'이 들어가면 10만원을 더주기
+UPDATE emp
+SET salary = salary + 100000
+WHERE empname LIKE '%정%';
+
+-- 영업부의 월급을 5만원 삭감하기
+UPDATE emp
+SET salary = salary - 50000
+WHERE dno IN (SELECT deptno FROM dept WHERE deptname = '영업')
+
+
+
 -- 선생님 SQL 문제
 
 CREATE TABLE member_tbl(
