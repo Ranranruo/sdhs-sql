@@ -1,3 +1,7 @@
+DROP TABLE customer;
+DROP TABLE book;
+DROP TABLE orders;
+
 create table customer
 (
    cno number primary key,
@@ -20,7 +24,9 @@ create table orders
    cno number,
    bno number,
    price number,
-   sdate date
+   sdate date,
+   FOREIGN KEY (cno) REFERENCES customer(cno),
+   FOREIGN KEY (bno) REFERENCES book(bno)
 );
 
 insert into customer
@@ -55,6 +61,7 @@ into orders values (7,    4,    8,    13000,    '2020-07-07')
 into orders values (8,    3,    10,    12000,    '2020-07-08')
 into orders values (9,    2,    10,    7000,    '2020-07—09')
 into orders values (10,    3,    8,    13000,    '2020-07-10')
+SELECT * FROM dual;
 
 -- 기본 질의
 
@@ -127,4 +134,198 @@ SELECT cno, COUNT(*), SUM(price) FROM orders GROUP BY cno;
 -- 가격이 8천원 이상인 도서를 구매한 고객에 대하여 고객별 주문 도서의 총수량을 구하시되. 단 2권 이상 구매한 고객만 구하시오
 SELECT cno, COUNT(*) FROM orders WHERE price >= 8000 GROUP BY cno HAVING COUNT(*) >= 2;
 
+-- SQL 연습2(with PPT)
+
+-- 1. 고객과 고객의 주문을 조회하세요.
+SELECT * FROM customer INNER JOIN orders ON customer.cno = orders.cno 
+
+-- 2. 고객과 고객의 주문에 대해 고객별로 정렬하여 조회하세요.
+SELECT * FROM customer INNER JOIN orders ON customer.cno = orders.cno ORDER BY customer.name
+
+-- 3. 고객의 이름과 고객이 주문한 도서의 판매가격을 검색하세요.
+SELECT customer.name, orders.price FROM customer INNER JOIN orders ON customer.cno = orders.cno;
+
+SELECT c.name, SUM(b.price)
+FROM customer c, orders, book b
+WHERE c.cno = orders.cno
+AND b.bno = orders.bno
+GROUP BY c.name;
+
+-- 4. 고객별로 주문한 모든 도서의 총판매액을 구하고, 고객별로 정렬하세요.
+SELECT c.name, SUM(price)
+FROM customer c, orders
+WHERE c.cno = orders.cno
+GROUP BY c.name;
+
+
+-- 5. 고객의 이름과 고객이 주문한 도서의 이름을 조회하세요. 
+SELECT c.name, b.name
+FROM customer c, book b, orders o
+WHERE c.cno = o.cno
+AND b.bno = o.bno
+
+-- 6. 가격이 2만원 이상인 도서를 주문한 고객의 이름과 도서의 이름을 구하세요.
+SELECT c.name, b.name
+FROM customer c, book b, orders o
+WHERE c.cno = o.cno
+AND b.bno = o.bno
+AND b.price >= 20000
+
+-- 7. 도서를 구매하지 않은 고객을 포함하여 고객의 이름과 고객이 주문한 도서의 판매 가격을 구하세요.
+SELECT c.name, SUM(o.price)
+FROM customer c
+LEFT OUTER JOIN orders o
+ON c.cno = o.cno
+GROUP BY c.name
+
+-- 8. 가장 비싼 도서의 이름을 조회하세요.
+SELECT name 
+FROM book
+WHERE price = (SELECT MAX(price) FROM book)
+
+-- 9. 도서를 구매한 적이 있는 고객의 이름을 검색하세요
+SELECT DISTINCT name
+FROM customer
+INNER JOIN orders
+ON customer.cno = orders.cno
+
+-- 10. `대한미디어`에서 출판한 도서를 구매한 고객의 이름을 조회하세요.
+SELECT c.name
+FROM customer c, book b, orders o
+WHERE c.cno = o.cno
+AND b.bno = o.bno
+AND o.bno IN(SELECT bno FROM book WHERE publisher = '대한미디어')
+
+-- 11. 출판사별로 출판사의 평균 도서가격 보다 비싼 도서를 조회하세요.
+SELECT b1.publisher, b1.name
+FROM book b1
+WHERE price > (SELECT AVG(b2.price) FROM book b2 WHERE b2.publisher = b1.publisher)
+
+
+-- 12. 도서를 주문하지 않은 고객의 이름을 조회하세요
+SELECT c1.name
+FROM customer c1
+MINUS
+SELECT c2.name
+FROM customer c2, orders
+WHERE c2.cno = orders.cno
+
+-- 13. 주문이 있는 고객의 이름과 주소를 조회하세요.
+SELECT c.name, c.address
+FROM customer c
+WHERE EXISTS(SELECT * FROM orders o WHERE o.cno = c.cno)
+
+-- 14. 도서번호가 1인 도서의 이름을 조회하세요
+SELECT name 
+FROM book
+WHERE bno = 1
+
+-- 15. 가격이 2만원 이상인 도서의 이름을 조회하세요.
+SELECT name
+FROM book
+WHERE price >= 20000
+
+-- 16. 박지성의 총구매액을 조회하세요.
+SELECT SUM(o.price)
+FROM customer c, orders o
+WHERE c.cno = o.cno
+GROUP BY c.cno
+HAVING c.cno = (SELECT cno FROM customer WHERE name = '박지성')
+
+-- 17. 박지성이 구매한 도서의 수를 조회하세요.
+SELECT COUNT(*)
+FROM customer c, orders o
+WHERE c.cno = o.cno
+GROUP BY c.cno
+HAVING c.cno = (SELECT cno FROM customer WHERE name = '박지성')
+
+-- 18. 박지성이 구매한 도서의 출판사 수를 조회하세요.
+SELECT COUNT(b.publisher)
+FROM customer c, orders o, book b
+WHERE c.cno = o.cno
+AND b.bno = o.bno
+AND c.cno = (SELECT cno FROM customer WHERE name = '박지성')
+
+-- 19. 박지성이 구매한 도서의 이름, 가격, 정가와 판매가격의 차이를 조회하세요.
+SELECT b.name, b.price, (b.price - o.price)
+FROM customer c, book b, orders o
+WHERE c.cno = o.cno
+AND b.bno = o.bno
+AND c.name = '박지성'
+
+-- 20. 박지성이 구매하지 않은 도서의 이름을 조회하세요.
+SELECT b.name
+FROM book b, orders o
+WHERE b.bno = o.bno
+AND o.cno <> (SELECT cno FROM customer WHERE name = '박지성')
+
+-- 21. 서점에서 취급하고 있는 모든 도서의 총 수를 구하세요.
+SELECT COUNT(*)
+FROM book
+
+-- 22. 서점에서 도서를 출고하는 출판사의 총 수를 구하세요.
+SELECT COUNT(DISTINCT publisher)
+FROM book
+
+-- 23. 모든 고객의 이름과 주소를 조회하세요.
+SELECT name, address
+FROM customer
+
+-- 24. 2020년 7월4일~2020년 7월 7일 사이에 주문받은 도서의 주문번호를 조회하세요.
+SELECT orderno
+FROM orders o
+WHERE sdate >= '2020-07-04'
+AND sdate <= '2020-07-07'
+
+-- 25. 2020년 7월4일~2020년 7월 7일 사이에 주문받은 도서를 제외한 도서의 주문번호를 조회하세요.
+SELECT orderno
+FROM orders o1
+MINUS
+SELECT orderno
+FROM orders o2
+WHERE sdate >= '2020-07-04'
+AND sdate <= '2020-07-07'
+
+-- 26. 성이 '김'씨인 고객의 이름과 주소를 조회하세요
+SELECT name, address
+FROM customer
+WHERE name LIKE '김%';
+
+-- 27. 성이 '김'씨이고, 이름이 '아'로 끝나는 고객의 이름과 주소를 조회하세요.
+SELECT name, address
+FROM customer
+WHERE name LIKE '김%아';
+
+-- 28. 주문하지 않은 고객의 이름을 조회하세요.
+SELECT name
+FROM customer
+MINUS
+SELECT DISTINCT name
+FROM customer
+INNER JOIN orders
+ON customer.cno = orders.cno
+
+-- 29. 주문 금액의 총액과 주문 금액의 평균을 조회하세요.
+SELECT SUM(price), AVG(price)
+FROM orders
+
+-- 30. 고객의 이름과 고객별 구매금액을 조회하세요.
+SELECT c.name, SUM(o.price)
+FROM customer c, orders o
+WHERE c.cno = o.cno
+GROUP BY c.name
+
+-- 31. 고객의 이름과 고객이 구매한 도서의 이름을 조회하세요.
+SELECT c.name, b.name
+FROM customer c, book b, orders o
+WHERE c.cno = o.cno
+AND b.bno = o.bno
+
+-- 32. 도서의 가격과 판매가격의 차이가 가장 큰 주문을 조회하세요.
+SELECT o.*
+FROM book b, orders o
+WHERE b.bno = o.bno
+AND (b.price - o.price) = (SELECT MAX(b.price - o.price) FROM book b, orders o WHERE b.bno = o.bno)
+
+-- 33. 도서의 판매액 평균보다 자신의 구매액 평균이 더 높은 고객의 이름을 조회하세요.
 
